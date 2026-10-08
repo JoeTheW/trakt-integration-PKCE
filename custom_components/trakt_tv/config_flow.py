@@ -4,7 +4,7 @@ import logging
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_CLIENT_ID, CONF_CLIENT_SECRET
+from homeassistant.const import CONF_CLIENT_ID
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.config_entry_oauth2_flow import AbstractOAuth2FlowHandler
 
@@ -34,11 +34,10 @@ class OAuth2FlowHandler(AbstractOAuth2FlowHandler, domain=DOMAIN):
 
             OAuth2FlowHandler.async_register_implementation(
                 self.hass,
-                config_entry_oauth2_flow.LocalOAuth2Implementation(
+                config_entry_oauth2_flow.LocalOAuth2ImplementationWithPkce(
                     self.hass,
                     DOMAIN,
                     user_input[CONF_CLIENT_ID],
-                    user_input[CONF_CLIENT_SECRET],
                     OAUTH2_AUTHORIZE,
                     OAUTH2_TOKEN,
                 ),
@@ -51,7 +50,6 @@ class OAuth2FlowHandler(AbstractOAuth2FlowHandler, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_CLIENT_ID): str,
-                    vol.Required(CONF_CLIENT_SECRET): str,
                 }
             ),
         )

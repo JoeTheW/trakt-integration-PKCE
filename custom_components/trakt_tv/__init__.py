@@ -4,7 +4,7 @@ import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_CLIENT_ID, CONF_CLIENT_SECRET
+from homeassistant.const import CONF_CLIENT_ID
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -37,11 +37,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up TraktTV from a config entry."""
     OAuth2FlowHandler.async_register_implementation(
         hass,
-        config_entry_oauth2_flow.LocalOAuth2Implementation(
+        config_entry_oauth2_flow.LocalOAuth2ImplementationWithPkce(
             hass,
             DOMAIN,
             entry.data[CONF_CLIENT_ID],
-            entry.data[CONF_CLIENT_SECRET],
             OAUTH2_AUTHORIZE,
             OAUTH2_TOKEN,
         ),
