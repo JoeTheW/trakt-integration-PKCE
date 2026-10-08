@@ -886,9 +886,32 @@ class TraktApi:
                 sources.append("stats")
                 coroutine_sources_data.append(source_function.get("stats")())
 
-            sources_data = await gather(*coroutine_sources_data)
+            LOGGER.info("[TRAKT API] Fetching %d data sources...", len(sources))
 
-            return {
-                source: source_data
-                for source, source_data in zip(sources, sources_data)
-            }
+            # Batch API requests to avoid rate limiting (max 3 concurrent requests per batch)
+            batch_size = 3
+            all_results = []
+            for i in range(0, len(coroutine_sources_data), batch_size):
+                batch = coroutine_sources_data[i:i + batch_size]
+                LOGGER.debug("[TRAKT API] Fetching batch %d/%d (%d items)", 
+                            (i // batch_size) + 1, ceil(len(coroutine_sources_data) / batch_size), len(batch))
+                try:
+                    results = await gather(*batch)
+                    all_results.extend(results)
+                except Exception as e:
+                    LOGGER.error("[TRAKT API] Error fetching batch %d: %s", (i // batch_size) + 1, e)
+                    all_results.extend([None] * len(batch))
+
+            result_dict = {}
+            errors = []
+            for idx, source in enumerate(sources):
+                if all_results[idx] is None:
+                    errors.append(source)
+                else:
+                    result_dict[source] = all_results[idx]
+
+            if errors:
+                LOGGER.warning("[TRAKT API] Failed to fetch from sources: %s", ", ".join(errors))
+                LOGGER.warning("[TRAKT API] Partial success: fetched %d/%d sources", len(result_dict), len(sources))
+
+            return result_dict

@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from datetime import datetime, timedelta, timezone
 from math import ceil
@@ -8,6 +9,8 @@ from dateutil import parser
 
 from .const import DOMAIN
 from .exception import TraktException
+
+LOGGER = logging.getLogger(__name__)
 
 CACHE_EXPIRATION = 480  # 8 minutes
 
@@ -52,13 +55,23 @@ def compute_calendar_args(
 def deserialize_json(document: str) -> Dict[str, Any]:
     """
     Deserialize a json returning a better error than JSONDecodeError.
+    Returns empty dict for non-JSON responses (HTML errors, empty responses, etc).
 
     :param document: The json document
     :return: The dictionary
     """
+    if not document or not isinstance(document, str):
+        return {}
+
+    stripped = document.strip()
+    if not stripped or not (stripped.startswith('{') or stripped.startswith('[')):
+        LOGGER.warning("Unexpected API response (not JSON): %s", document[:200])
+        return {}
+
     try:
-        return json.loads(document)
-    except json.decoder.JSONDecodeError:
+        return json.loads(stripped)
+    except json.decoder.JSONDecodeError as e:
+        LOGGER.error("Failed to parse JSON from API: %s - Response was: %s", e, document[:500])
         raise TraktException(f"Can't deserialize the following json:\n{document}")
 
 
