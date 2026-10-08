@@ -884,8 +884,13 @@ class TraktApi:
 
             """ Add user stats """
             if configuration.source_exists("stats"):
+                LOGGER.info("[TRAKT API] Config says stats is enabled")
                 sources.append("stats")
                 coroutine_sources_data.append(source_function.get("stats")())
+            else:
+                LOGGER.warning("[TRAKT API] Config does NOT have 'stats' source configured!")
+                LOGGER.warning("[TRAKT API] Available sources: %s", list(configuration.conf.get("sensors", {}).keys()))
+                LOGGER.warning("[TRAKT API] Full conf: %s", configuration.conf)
 
             LOGGER.info("[TRAKT API] Fetching %d data sources...", len(sources))
 
